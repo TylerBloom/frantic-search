@@ -5,6 +5,9 @@ version = 4
 [[package]]
 name = "rules-cli"
 version = "0.1.0"
+dependencies = [
+ "rules-core",
+]
 
 [[package]]
 name = "rules-core"

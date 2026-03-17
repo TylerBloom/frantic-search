@@ -8,3 +8,4 @@ name = "rules"
 path = "src/main.rs"
 
 [dependencies]
+rules-core = { path = "../core" }

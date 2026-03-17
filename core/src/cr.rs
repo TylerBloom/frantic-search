@@ -1,7 +1,15 @@
 use std::fmt::Display;
 
+static LATEST_CR: &str = include_str!("../../docs/latest_cr.txt");
+
 #[derive(Debug, Clone)]
 pub struct Cr<'a>(pub Vec<Section<'a>>);
+
+impl Cr<'_> {
+    pub fn latest() -> Cr<'static> {
+        Cr::parse(LATEST_CR)
+    }
+}
 
 impl Display for Cr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -19,7 +27,7 @@ pub struct Section<'a> {
 
 impl Display for Section<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "  {}", self.text)?;
+        write!(f, "{}", self.text)?;
         self.subsections
             .iter()
             .try_for_each(|sub| write!(f, "\n{sub}"))
@@ -34,7 +42,7 @@ pub struct SubSection<'a> {
 
 impl Display for SubSection<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "    {}", self.text)?;
+        write!(f, "  {}", self.text)?;
         self.rules.iter().try_for_each(|rule| write!(f, "\n{rule}"))
     }
 }
@@ -49,7 +57,7 @@ pub struct Rule<'a> {
 
 impl Display for Rule<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "      {}", self.text)?;
+        write!(f, "    {}", self.text)?;
         self.subrules
             .iter()
             .try_for_each(|sub| write!(f, "\n{sub}"))
@@ -62,6 +70,6 @@ pub struct SubRule<'a> {
 }
 impl Display for SubRule<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "        {}", self.text)
+        write!(f, "      {}", self.text)
     }
 }
