@@ -1,12 +1,14 @@
-use crate::{Rule, Section, SubRule, SubSection};
+use crate::cr::*;
 
-pub fn parse_cr(text: &str) -> Vec<Section<'_> > {
-    let mut text = build_rules_iter(text);
-    let mut digest = Vec::new();
-    while let Some(line) = text.next() {
-        digest.push(Section::construct(line, &mut text));
+impl<'a> Cr<'a> {
+    pub fn parse(text: &'a str) -> Cr<'a> {
+        let mut text = build_rules_iter(text);
+        let mut digest = Vec::new();
+        while let Some(line) = text.next() {
+            digest.push(Section::construct(line, &mut text));
+        }
+        Self(digest)
     }
-    digest
 }
 
 /// The CR's text starts and ends with a bunch of text that is not super helpful as, right now, the
@@ -41,7 +43,7 @@ impl<'a> Section<'a> {
                 None => {
                     return Self {
                         text: line,
-                        sections: subsections,
+                        subsections,
                     };
                 }
             }
@@ -100,6 +102,6 @@ impl<'a> SubRule<'a> {
             .chars()
             .last()
             .is_some_and(char::is_alphabetic)
-            .then(|| Self { text })
+            .then_some(Self { text })
     }
 }
