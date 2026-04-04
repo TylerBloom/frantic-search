@@ -1,0 +1,11 @@
+[package]
+name = "frantic-web"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+frantic-client = { path = "../frantic-client" }
+frantic-core = { path = "../frantic-core" }
+gloo = "0.12.0"
+js-sys = "0.3.94"
+yew = { version = "0.23.0", features = ["csr"] }
