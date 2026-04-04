@@ -1,7 +1,10 @@
 [workspace]
 members = [
-    "core",
-    "cli",
+    "frantic-core",
+    "frantic-cli",
+    "frantic-web",
+    "frantic-client",
+    "frantic-updater",
 ]
 resolver = "2"
 
