@@ -1,5 +1,7 @@
 use crate::cr::*;
 
+pub struct CrSearch();
+
 impl<'a> Cr<'a> {
     pub fn search(&self, words: &'_ [String]) -> Cr<'a> {
         let mut digest = self.clone();
