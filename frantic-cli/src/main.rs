@@ -1,6 +1,6 @@
 use std::env::args;
 
-use rules_core::cr::Cr;
+use frantic_core::cr::Cr;
 
 fn main() {
     let mut args = args();

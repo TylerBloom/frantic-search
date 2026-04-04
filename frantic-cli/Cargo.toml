@@ -8,4 +8,5 @@ name = "rules"
 path = "src/main.rs"
 
 [dependencies]
-rules-core = { path = "../core" }
+frantic-core = { path = "../frantic-core" }
+frantic-client = { path = "../frantic-client" }
