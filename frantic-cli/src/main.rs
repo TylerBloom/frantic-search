@@ -1,6 +1,6 @@
 use std::env::args;
 
-use frantic_core::cr::Cr;
+use frantic_core::{cr::Cr, normalize_cr_text};
 
 fn main() {
     let mut args = args();
