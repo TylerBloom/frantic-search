@@ -9,3 +9,9 @@ path = "src/main.rs"
 
 [dependencies]
 frantic-core = { path = "../frantic-core" }
+frantic-client = { path = "../frantic-client" }
+reqwest = "0.13.2"
+tokio = { version = "1.51.0", features = ["full"] }
+anyhow = "1.0.102"
+chrono = { version = "0.4.44", features = ["serde"] }
+time = "0.3.47"
