@@ -1,23 +1,38 @@
-use gloo::console;
+
+use frantic_client::{CrDocument, FranticClient};
+use gloo::console::{self};
 use js_sys::Date;
-use yew::{html, Component, Context, Html};
+use yew::{Component, Context, Html, html};
 
 // Define the possible messages which can be sent to the component
 pub enum Msg {
     Increment,
     Decrement,
+    Cr(CrDocument),
 }
 
 pub struct App {
     value: i64, // This will store the counter value
+    // client: FranticClient<ReadOnly>,
+    cr: CrDocument,
 }
 
 impl Component for App {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self { value: 0 }
+    fn create(ctx: &Context<Self>) -> Self {
+        let client = FranticClient::connect();
+        ctx.link().send_future(async move {
+            console::log!("Fetching latest CR...");
+            let cr = client.fetch_latest().await.unwrap();
+            console::log!(format!("Cr fetched: {cr:?}"));
+            Msg::Cr(cr)
+        });
+        Self {
+            value: 0,
+            cr: CrDocument::default(),
+        }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
@@ -30,6 +45,10 @@ impl Component for App {
             Msg::Decrement => {
                 self.value -= 1;
                 console::log!("minus one");
+                true
+            }
+            Msg::Cr(cr) => {
+                self.cr = cr;
                 true
             }
         }
@@ -66,6 +85,8 @@ impl Component for App {
                     { "Rendered: " }
                     { String::from(Date::new_0().to_string()) }
                 </p>
+
+                <p> { format!("{:#?}", self.cr) } </p>
             </div>
         }
     }
