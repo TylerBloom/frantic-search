@@ -3,5 +3,24 @@ name = "frantic-client"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+writable = ["jsonwebtoken"]
+
 [dependencies]
+
+jsonwebtoken = { version = "9", optional = true }
+serde_json = { version = "1" }
+
+reqwest = { version = "0.13.2", features = ["json", "form", "blocking"] }
+chrono = { version = "0.4.44", features = ["serde"] }
+
+
+
+anyhow = "1.0.102"
 frantic-core = { path = "../frantic-core" }
+serde = "1.0.228"
+time = "0.3.47"
+
+
+
+uuid = { version = "1.23.0", features = ["serde"] }
