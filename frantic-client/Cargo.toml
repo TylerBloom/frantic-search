@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-writable = ["jsonwebtoken", "chrono/serde"]
+writable = ["jsonwebtoken", "chrono/serde", "chrono/now"]
 
 [dependencies]
 jsonwebtoken = { version = "9", optional = true }

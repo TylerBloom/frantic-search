@@ -1,5 +1,5 @@
 #[cfg(feature = "writable")]
-use chrono::NaiveDate;
+use chrono::{DateTime, Utc};
 use reqwest::Client;
 
 pub struct FranticClient<T> {
@@ -116,10 +116,13 @@ impl<T> FranticClient<T> {
             ));
         }
 
-        let value: serde_json::Value = resp.json().await.unwrap();
+        let value: serde_json::Value = resp.json().await?;
         let document = &value[0]["document"]["fields"];
         let text = document["text"]["stringValue"].as_str().unwrap().into();
-        let date = document["date"]["timestampValue"].as_str().unwrap().to_string();
+        let date = document["date"]["timestampValue"]
+            .as_str()
+            .unwrap()
+            .to_string();
         let (date, _) = date.split_once("T").unwrap();
         let year = &date[0..4];
         let month = match &date[5..7] {
@@ -135,21 +138,24 @@ impl<T> FranticClient<T> {
             "10" => "October",
             "11" => "November",
             "12" => "December",
-            month => return Err(anyhow::anyhow!(format!("Invalid date: {date:?}... {month:?}"))),
-        }.to_owned();
+            month => {
+                return Err(anyhow::anyhow!(format!(
+                    "Invalid date: {date:?}... {month:?}"
+                )));
+            }
+        }
+        .to_owned();
         let day = &date[8..10];
-        Ok(CrDocument { text, date: format!("{month} {day}, {year}") })
+        Ok(CrDocument {
+            text,
+            date: format!("{month} {day}, {year}"),
+        })
     }
 }
 
 #[cfg(feature = "writable")]
 impl FranticClient<Admin> {
-    pub async fn write(&self, text: String, date: NaiveDate) -> anyhow::Result<()> {
-        use chrono::{NaiveTime, Utc};
-
-        let date = date.and_time(NaiveTime::default());
-        let date = date.and_local_timezone(Utc).unwrap();
-        println!("{date}");
+    pub async fn write(&self, text: String, date: DateTime<Utc>) -> anyhow::Result<()> {
         let write_resp = self.client
         .post("https://firestore.googleapis.com/v1/projects/applied-might-492316-v6/databases/frantic-search-fire/documents/rules")
         .header("Authorization", format!("Bearer {}", self.marker.0))
@@ -170,5 +176,62 @@ impl FranticClient<Admin> {
             ));
         }
         Ok(())
+    }
+
+    pub async fn write_to_log(&self) -> anyhow::Result<()> {
+        use chrono::Utc;
+
+        let date = Utc::now();
+
+        let write_resp = self.client
+        .post("https://firestore.googleapis.com/v1/projects/applied-might-492316-v6/databases/frantic-search-fire/documents/update_logs")
+        .header("Authorization", format!("Bearer {}", self.marker.0))
+        .json(&serde_json::json!({
+            "fields": {
+                "date": { "timestampValue": date }
+            }
+        }))
+        .send()
+        .await?;
+
+        if !write_resp.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "Failed to write document: {}\n{}",
+                write_resp.status(),
+                write_resp.text().await?
+            ));
+        }
+        Ok(())
+    }
+
+    pub async fn fetch_last_update_log(&self) -> anyhow::Result<DateTime<Utc>> {
+        let body = r#"{
+        "structuredQuery": {
+            "from": [{"collectionId": "update_logs"}],
+            "orderBy": [{ "field": { "fieldPath": "date" }, "direction": "Descending" }],
+            "limit": 1
+        }
+    }"#;
+        let resp = self.client
+        .post("https://firestore.googleapis.com/v1/projects/applied-might-492316-v6/databases/frantic-search-fire/documents:runQuery")
+        .header("Content-Type", "application/json")
+        .body(body)
+        .send()
+        .await?;
+
+        if !resp.status().is_success() {
+            Err(anyhow::anyhow!(
+                "Failed to fetch document: {}\n{}",
+                resp.status(),
+                resp.text().await?
+            ))
+        } else {
+            use std::str::FromStr;
+
+            let value: serde_json::Value = resp.json().await?;
+            let document = &value[0]["document"]["fields"];
+            let date = document["date"]["timestampValue"].as_str().unwrap();
+            Ok(DateTime::<Utc>::from_str(date).unwrap())
+        }
     }
 }
