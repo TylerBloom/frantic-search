@@ -1,21 +1,11 @@
 use std::fmt::Display;
 
-static LATEST_CR: &str = include_str!("../../docs/latest_cr.txt");
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Cr<'a>(pub Vec<Section<'a>>);
-
-impl Cr<'_> {
-    pub fn latest() -> Cr<'static> {
-        Cr::parse(crate::normalize_cr_text(LATEST_CR).leak())
-    }
-}
 
 impl Display for Cr<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0
-            .iter()
-            .try_for_each(|section| write!(f, "{section}"))
+        self.0.iter().try_for_each(|section| write!(f, "{section}"))
     }
 }
 
