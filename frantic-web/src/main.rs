@@ -1,5 +1,6 @@
 
 use frantic_client::{CrDocument, FranticClient};
+use frantic_core::cr::Cr;
 use gloo::console::{self};
 use js_sys::Date;
 use yew::{Component, Context, Html, html};
@@ -14,7 +15,8 @@ pub enum Msg {
 pub struct App {
     value: i64, // This will store the counter value
     // client: FranticClient<ReadOnly>,
-    cr: CrDocument,
+    cr: Cr<'static>,
+    date: String,
 }
 
 impl Component for App {
@@ -25,13 +27,20 @@ impl Component for App {
         let client = FranticClient::connect();
         ctx.link().send_future(async move {
             console::log!("Fetching latest CR...");
-            let cr = client.fetch_latest().await.unwrap();
+            let cr = match client.fetch_latest().await {
+                Ok(cr) => cr,
+                Err(err) => {
+                    console::log!(err.to_string());
+                    panic!()
+                }
+            };
             console::log!(format!("Cr fetched: {cr:?}"));
             Msg::Cr(cr)
         });
         Self {
             value: 0,
-            cr: CrDocument::default(),
+            cr: Cr::default(),
+            date: String::new(),
         }
     }
 
@@ -48,7 +57,8 @@ impl Component for App {
                 true
             }
             Msg::Cr(cr) => {
-                self.cr = cr;
+                self.date = cr.date;
+                self.cr = Cr::parse(String::leak(cr.text));
                 true
             }
         }
@@ -86,7 +96,8 @@ impl Component for App {
                     { String::from(Date::new_0().to_string()) }
                 </p>
 
-                <p> { format!("{:#?}", self.cr) } </p>
+                <p> { format!("Rules as of {}", self.date) } </p>
+                <p> { self.cr.to_string() } </p>
             </div>
         }
     }
