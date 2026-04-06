@@ -7,7 +7,7 @@ pub struct Cr<'a>(pub Vec<Section<'a>>);
 
 impl Cr<'_> {
     pub fn latest() -> Cr<'static> {
-        Cr::parse(LATEST_CR)
+        Cr::parse(crate::normalize_cr_text(LATEST_CR).leak())
     }
 }
 
