@@ -9,7 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 frantic-core = { path = "../frantic-core" }
-frantic-client = { path = "../frantic-client" }
+frantic-client = { path = "../frantic-client", features = ["writable"] }
 reqwest = "0.13.2"
 tokio = { version = "1.51.0", features = ["full"] }
 anyhow = "1.0.102"
