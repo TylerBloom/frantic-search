@@ -1,6 +1,5 @@
-use frantic_client::{CrDocument, FranticClient};
+use frantic_client::{CrDocument};
 use frantic_core::cr::Cr;
-use gloo::console;
 use web_sys::HtmlInputElement;
 use yew::{Component, Context, Html, TargetCast, html};
 
@@ -14,6 +13,7 @@ pub struct App {
     date: String,
     query: String,
 }
+
 #[cfg(debug_assertions)]
 async fn fetch_cr() -> Msg {
     Msg::Cr(CrDocument {
@@ -24,17 +24,71 @@ async fn fetch_cr() -> Msg {
 
 #[cfg(not(debug_assertions))]
 async fn fetch_cr() -> Msg {
-    let client = FranticClient::connect();
-    console::log!("Fetching latest CR...");
+    let client = frantic_client::FranticClient::connect();
+    gloo::console::log!("Fetching latest CR...");
     let cr = match client.fetch_latest().await {
         Ok(cr) => cr,
         Err(err) => {
-            console::log!(err.to_string());
+            gloo::console::log!(err.to_string());
             panic!()
         }
     };
     console::log!(format!("Cr fetched: {cr:?}"));
     Msg::Cr(cr)
+}
+
+/// Renders `text` as HTML, wrapping every occurrence of each word in a `<mark>`.
+fn highlight(text: &str, words: &[String]) -> Html {
+    if words.is_empty() {
+        return html! { {text} };
+    }
+
+    // Collect all (start, end) byte ranges that match any word.
+    let mut ranges: Vec<(usize, usize)> = Vec::new();
+    for word in words {
+        if word.is_empty() {
+            continue;
+        }
+        let mut cursor = 0;
+        while let Some(pos) = text[cursor..].find(word.as_str()) {
+            let start = cursor + pos;
+            let end = start + word.len();
+            ranges.push((start, end));
+            cursor = end;
+        }
+    }
+
+    if ranges.is_empty() {
+        return html! { {text} };
+    }
+
+    // Sort then merge overlapping/adjacent ranges.
+    ranges.sort_by_key(|r| r.0);
+    let mut merged: Vec<(usize, usize)> = Vec::new();
+    for (start, end) in ranges {
+        match merged.last_mut() {
+            Some(last) if start <= last.1 => last.1 = last.1.max(end),
+            _ => merged.push((start, end)),
+        }
+    }
+
+    // Build fragments: plain text interleaved with <mark> spans.
+    let mut parts: Vec<Html> = Vec::new();
+    let mut cursor = 0;
+    for (start, end) in merged {
+        if cursor < start {
+            let before = &text[cursor..start];
+            parts.push(html! { {before} });
+        }
+        let matched = &text[start..end];
+        parts.push(html! { <mark class="cr-highlight">{matched}</mark> });
+        cursor = end;
+    }
+    if cursor < text.len() {
+        parts.push(html! { {&text[cursor..]} });
+    }
+
+    html! { <>{ for parts.into_iter() }</> }
 }
 
 impl Component for App {
@@ -88,15 +142,15 @@ impl Component for App {
                 />
                 { for displayed.0.iter().map(|section| html! {
                     <div class="cr-section">
-                        <h2 class="cr-section-header">{ section.text }</h2>
+                        <h2 class="cr-section-header">{ highlight(section.text, &words) }</h2>
                         { for section.subsections.iter().map(|subsection| html! {
                             <div class="cr-subsection">
-                                <h3 class="cr-subsection-header">{ subsection.text }</h3>
+                                <h3 class="cr-subsection-header">{ highlight(subsection.text, &words) }</h3>
                                 { for subsection.rules.iter().map(|rule| html! {
                                     <div class="cr-rule">
-                                        <p class="cr-rule-text">{ rule.text }</p>
+                                        <p class="cr-rule-text">{ highlight(rule.text, &words) }</p>
                                         { for rule.subrules.iter().map(|subrule| html! {
-                                            <p class="cr-subrule-text">{ subrule.text }</p>
+                                            <p class="cr-subrule-text">{ highlight(subrule.text, &words) }</p>
                                         }) }
                                     </div>
                                 }) }
