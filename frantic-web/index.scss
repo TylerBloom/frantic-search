@@ -1,26 +1,78 @@
-button {
-  background-color: #008f53; /* Green */
-  border: 0;
-  color: white;
-  padding: 14px 14px;
-  text-align: center;
-  font-size: 16px;
-  margin: 2px 2px;
-  width: 100px;
+body {
+    font-family: Georgia, serif;
+    background-color: #f9f7f2;
+    color: #1a1a1a;
+    margin: 0;
+    padding: 0;
 }
 
-.counter {
-    color: #008f53;
-    font-size: 48px;
-    text-align: center;
+.cr-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
 }
 
-.footer {
-    text-align: center;
-    font-size: 12px;
+.cr-search {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    font-size: 1rem;
+    font-family: inherit;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    box-sizing: border-box;
+
+    &:focus {
+        outline: none;
+        border-color: #008f53;
+        box-shadow: 0 0 0 2px rgba(0, 143, 83, 0.2);
+    }
 }
 
-.panel {
-  display: flex;
-  justify-content: center;
+.cr-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #005c35;
+    border-bottom: 2px solid #008f53;
+    padding-bottom: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.cr-section {
+    margin-bottom: 2rem;
+}
+
+.cr-section-header {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #005c35;
+    margin: 0 0 0.75rem 0;
+}
+
+.cr-subsection {
+    margin-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+.cr-subsection-header {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #333;
+    margin: 0 0 0.5rem 0;
+}
+
+.cr-rule {
+    margin-left: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.cr-rule-text {
+    margin: 0 0 0.25rem 0;
+    line-height: 1.5;
+}
+
+.cr-subrule-text {
+    margin: 0 0 0.2rem 1.5rem;
+    line-height: 1.5;
+    color: #444;
 }
