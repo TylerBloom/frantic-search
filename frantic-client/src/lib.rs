@@ -11,6 +11,7 @@ pub struct FranticClient<T> {
 pub struct ReadOnly();
 
 /// A marker type used for [`FranticClient`] to mark the client as having admin permissions.
+#[cfg(feature = "writable")]
 pub struct Admin(String);
 
 #[derive(Debug, Default)]
@@ -28,9 +29,9 @@ impl FranticClient<ReadOnly> {
     }
 }
 
+#[cfg(feature = "writable")]
 impl FranticClient<Admin> {
     /// The path needs to point to an admin JWT.
-    #[cfg(feature = "writable")]
     pub async fn connect_with_cred(
         path: impl AsRef<std::path::Path>,
     ) -> anyhow::Result<FranticClient<Admin>> {
@@ -92,21 +93,17 @@ impl FranticClient<Admin> {
     }
 }
 
+static FIREBASE_URL: &str = "https://firestore.googleapis.com/v1";
+static PARENT: &str = "projects/applied-might-492316-v6/databases/frantic-search-fire/documents";
+
 impl<T> FranticClient<T> {
     pub async fn fetch_latest(&self) -> anyhow::Result<CrDocument> {
-        let body = r#"{
-        "structuredQuery": {
-            "from": [{"collectionId": "rules"}],
-            "orderBy": [{ "field": { "fieldPath": "date" }, "direction": "Descending" }],
-            "limit": 1
-        }
-    }"#;
-        let resp = self.client
-        .post("https://firestore.googleapis.com/v1/projects/applied-might-492316-v6/databases/frantic-search-fire/documents:runQuery")
-        .header("Content-Type", "application/json")
-        .body(body)
-        .send()
-        .await?;
+        let resp = self
+            .client
+            .get(format!("{FIREBASE_URL}/{PARENT}/rules/latest"))
+            .header("Content-Type", "application/json")
+            .send()
+            .await?;
 
         if !resp.status().is_success() {
             return Err(anyhow::anyhow!(
@@ -117,12 +114,11 @@ impl<T> FranticClient<T> {
         }
 
         let value: serde_json::Value = resp.json().await?;
-        let document = &value[0]["document"]["fields"];
-        let text = document["text"]["stringValue"].as_str().unwrap().into();
-        let date = document["date"]["timestampValue"]
-            .as_str()
-            .unwrap()
-            .to_string();
+        let document = &value["fields"];
+        let text = &document["text"];
+        let text = text["stringValue"].as_str().unwrap().into();
+        let date = &document["date"];
+        let date = date["timestampValue"].as_str().unwrap().to_string();
         let (date, _) = date.split_once("T").unwrap();
         let year = &date[0..4];
         let month = match &date[5..7] {
@@ -156,17 +152,46 @@ impl<T> FranticClient<T> {
 #[cfg(feature = "writable")]
 impl FranticClient<Admin> {
     pub async fn write(&self, text: String, date: DateTime<Utc>) -> anyhow::Result<()> {
-        let write_resp = self.client
-        .post("https://firestore.googleapis.com/v1/projects/applied-might-492316-v6/databases/frantic-search-fire/documents/rules")
-        .header("Authorization", format!("Bearer {}", self.marker.0))
-        .json(&serde_json::json!({
-            "fields": {
-                "text": { "stringValue": text },
-                "date": { "timestampValue": date }
-            }
-        }))
-        .send()
-        .await?;
+        let write_resp = self
+            .client
+            .post(format!("{FIREBASE_URL}/{PARENT}/rules"))
+            .header("Authorization", format!("Bearer {}", self.marker.0))
+            .json(&serde_json::json!({
+                "fields": {
+                    "text": { "stringValue": text },
+                    "date": { "timestampValue": date }
+                }
+            }))
+            .send()
+            .await?;
+
+        if !write_resp.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "Failed to write document: {}\n{}",
+                write_resp.status(),
+                write_resp.text().await?
+            ));
+        }
+        Ok(())
+    }
+
+    pub async fn write_latest_rules(
+        &self,
+        text: String,
+        date: DateTime<Utc>,
+    ) -> anyhow::Result<()> {
+        let write_resp = self
+            .client
+            .post(format!("{FIREBASE_URL}/{PARENT}/rules?documentId=latest"))
+            .header("Authorization", format!("Bearer {}", self.marker.0))
+            .json(&serde_json::json!({
+                "fields": {
+                    "text": { "stringValue": text },
+                    "date": { "timestampValue": date }
+                }
+            }))
+            .send()
+            .await?;
 
         if !write_resp.status().is_success() {
             return Err(anyhow::anyhow!(
@@ -183,16 +208,17 @@ impl FranticClient<Admin> {
 
         let date = Utc::now();
 
-        let write_resp = self.client
-        .post("https://firestore.googleapis.com/v1/projects/applied-might-492316-v6/databases/frantic-search-fire/documents/update_logs")
-        .header("Authorization", format!("Bearer {}", self.marker.0))
-        .json(&serde_json::json!({
-            "fields": {
-                "date": { "timestampValue": date }
-            }
-        }))
-        .send()
-        .await?;
+        let write_resp = self
+            .client
+            .post(format!("{FIREBASE_URL}/{PARENT}/update_logs"))
+            .header("Authorization", format!("Bearer {}", self.marker.0))
+            .json(&serde_json::json!({
+                "fields": {
+                    "date": { "timestampValue": date }
+                }
+            }))
+            .send()
+            .await?;
 
         if !write_resp.status().is_success() {
             return Err(anyhow::anyhow!(
@@ -212,12 +238,13 @@ impl FranticClient<Admin> {
             "limit": 1
         }
     }"#;
-        let resp = self.client
-        .post("https://firestore.googleapis.com/v1/projects/applied-might-492316-v6/databases/frantic-search-fire/documents:runQuery")
-        .header("Content-Type", "application/json")
-        .body(body)
-        .send()
-        .await?;
+        let resp = self
+            .client
+            .post(format!("{FIREBASE_URL}/{PARENT}:runQuery"))
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await?;
 
         if !resp.status().is_success() {
             Err(anyhow::anyhow!(
