@@ -1,4 +1,4 @@
-use frantic_client::{CrDocument};
+use frantic_client::CrDocument;
 use frantic_core::cr::Cr;
 use web_sys::HtmlInputElement;
 use yew::{Component, Context, Html, TargetCast, html};
@@ -33,7 +33,7 @@ async fn fetch_cr() -> Msg {
             panic!()
         }
     };
-    console::log!(format!("Cr fetched: {cr:?}"));
+    gloo::console::log!(format!("Cr fetched: {cr:?}"));
     Msg::Cr(cr)
 }
 
