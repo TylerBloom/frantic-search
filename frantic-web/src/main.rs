@@ -55,7 +55,7 @@ async fn fetch_cr() -> Msg {
     }
     let client = frantic_client::FranticClient::connect();
     gloo::console::log!("Fetching latest CR...");
-    let cr = match client.fetch_latest().await {
+    let cr = match client.fetch_latest_indirect().await {
         Ok(cr) => cr,
         Err(err) => {
             gloo::console::log!(err.to_string());
