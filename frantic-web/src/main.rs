@@ -24,6 +24,35 @@ async fn fetch_cr() -> Msg {
 
 #[cfg(not(debug_assertions))]
 async fn fetch_cr() -> Msg {
+    const CACHE_KEY_TEXT: &str = "frantic_cr_text";
+    const CACHE_KEY_DATE: &str = "frantic_cr_date";
+    const CACHE_KEY_TIME: &str = "frantic_cr_cached_at";
+    const CACHE_DURATION_MS: f64 = 12.0 * 60.0 * 60.0 * 1000.0;
+    fn get_cached_cr() -> Option<frantic_client::CrDocument> {
+        let storage = web_sys::window()?.local_storage().ok()??;
+        let cached_at: f64 = storage.get_item(CACHE_KEY_TIME).ok()??.parse().ok()?;
+        if js_sys::Date::now() - cached_at > CACHE_DURATION_MS {
+            return None;
+        }
+        let text = storage.get_item(CACHE_KEY_TEXT).ok()??;
+        let date = storage.get_item(CACHE_KEY_DATE).ok()??;
+        Some(frantic_client::CrDocument { text, date })
+    }
+
+    fn set_cached_cr(cr: &frantic_client::CrDocument) {
+        let Some(storage) = web_sys::window().and_then(|w| w.local_storage().ok()?) else {
+            return;
+        };
+        let now = js_sys::Date::now();
+        let _ = storage.set_item(CACHE_KEY_TIME, &now.to_string());
+        let _ = storage.set_item(CACHE_KEY_TEXT, &cr.text);
+        let _ = storage.set_item(CACHE_KEY_DATE, &cr.date);
+    }
+
+    if let Some(cr) = get_cached_cr() {
+        gloo::console::log!("Using cached CR.");
+        return Msg::Cr(cr);
+    }
     let client = frantic_client::FranticClient::connect();
     gloo::console::log!("Fetching latest CR...");
     let cr = match client.fetch_latest().await {
@@ -34,6 +63,7 @@ async fn fetch_cr() -> Msg {
         }
     };
     gloo::console::log!(format!("Cr fetched: {cr:?}"));
+    set_cached_cr(&cr);
     Msg::Cr(cr)
 }
 
