@@ -72,7 +72,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Build WASM with Trunk
         working-directory: frantic-web
-        run: trunk build --release=true --filehash=false --public-url "/${{ github.event.repository.name }}/" index.html
+        run: trunk build --release=true --filehash=false index.html
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
