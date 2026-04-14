@@ -14,15 +14,6 @@ pub struct App {
     query: String,
 }
 
-#[cfg(debug_assertions)]
-async fn fetch_cr() -> Msg {
-    Msg::Cr(CrDocument {
-        text: include_str!("../../docs/MagicCompRules 20260227.txt").into(),
-        date: "TESTING".into(),
-    })
-}
-
-#[cfg(not(debug_assertions))]
 async fn fetch_cr() -> Msg {
     const CACHE_KEY_TEXT: &str = "frantic_cr_text";
     const CACHE_KEY_DATE: &str = "frantic_cr_date";
@@ -50,11 +41,9 @@ async fn fetch_cr() -> Msg {
     }
 
     if let Some(cr) = get_cached_cr() {
-        gloo::console::log!("Using cached CR.");
         return Msg::Cr(cr);
     }
     let client = frantic_client::FranticClient::connect();
-    gloo::console::log!("Fetching latest CR...");
     let cr = match client.fetch_latest_indirect().await {
         Ok(cr) => cr,
         Err(err) => {
@@ -62,7 +51,6 @@ async fn fetch_cr() -> Msg {
             panic!()
         }
     };
-    gloo::console::log!(format!("Cr fetched: {cr:?}"));
     set_cached_cr(&cr);
     Msg::Cr(cr)
 }
