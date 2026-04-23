@@ -26,6 +26,7 @@ async fn main() -> anyhow::Result<()> {
             println!("Found CR text from {date}");
             let text = resp.text().await.unwrap();
             let text = frantic_core::normalize_cr_text(&text);
+            fs_client.write_latest_rules(text.clone(), date).await.unwrap();
             fs_client.write(text, date).await.unwrap();
         }
 
