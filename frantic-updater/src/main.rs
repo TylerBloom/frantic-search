@@ -4,8 +4,8 @@ use reqwest::Client;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let cred_path = std::env::var("FIREBASE_CREDS")?;
-    let fs_client = FranticClient::connect_with_cred(cred_path).await.unwrap();
+    let creds = std::env::var("FIREBASE_CREDS")?;
+    let fs_client = FranticClient::connect_with_cred(creds).await.unwrap();
     let now = Utc::now();
 
     // Get the date that this was last ran. There will be a logs collection.
@@ -26,7 +26,8 @@ async fn main() -> anyhow::Result<()> {
             println!("Found CR text from {date}");
             let text = resp.text().await.unwrap();
             let text = frantic_core::normalize_cr_text(&text);
-            fs_client.write(text, date).await.unwrap();
+            fs_client.write(text.clone(), date).await.unwrap();
+            fs_client.write_latest_rules(text, date).await.unwrap();
         }
 
         date = date + Days::new(1);
