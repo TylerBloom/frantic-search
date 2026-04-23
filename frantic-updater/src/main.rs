@@ -4,8 +4,8 @@ use reqwest::Client;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let cred_path = std::env::var("FIREBASE_CREDS")?;
-    let fs_client = FranticClient::connect_with_cred(cred_path).await.unwrap();
+    let creds = std::env::var("FIREBASE_CREDS")?;
+    let fs_client = FranticClient::connect_with_cred(creds).await.unwrap();
     let now = Utc::now();
 
     // Get the date that this was last ran. There will be a logs collection.
