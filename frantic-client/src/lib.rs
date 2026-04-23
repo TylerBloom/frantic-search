@@ -241,7 +241,7 @@ impl FranticClient<Admin> {
 
         let write_resp = self
             .client
-            .post(format!("{FIREBASE_URL}/{PARENT}/rules?documentId=latest"))
+            .patch(format!("{FIREBASE_URL}/{PARENT}/rules/latest"))
             .header("Authorization", format!("Bearer {}", self.marker.0))
             .json(&serde_json::json!({
                 "fields": {
@@ -268,8 +268,8 @@ impl FranticClient<Admin> {
         );
         let write_resp = self
             .client
-            .post(format!(
-                "{FIREBASE_URL}/{PARENT}/links?documentId=latest_cr"
+            .patch(format!(
+                "{FIREBASE_URL}/{PARENT}/links/latest_cr"
             ))
             .header("Authorization", format!("Bearer {}", self.marker.0))
             .json(&serde_json::json!({
