@@ -57,6 +57,7 @@ async fn fetch_cr() -> Msg {
 
 /// Renders `text` as HTML, wrapping every occurrence of each word in a `<mark>`.
 fn highlight(text: &str, words: &[String]) -> Html {
+    let lc_text = text.to_lowercase();
     if words.is_empty() {
         return html! { {text} };
     }
@@ -68,7 +69,7 @@ fn highlight(text: &str, words: &[String]) -> Html {
             continue;
         }
         let mut cursor = 0;
-        while let Some(pos) = text[cursor..].find(word.as_str()) {
+        while let Some(pos) = lc_text[cursor..].find(word.as_str()) {
             let start = cursor + pos;
             let end = start + word.len();
             ranges.push((start, end));
@@ -136,7 +137,11 @@ impl Component for App {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let words: Vec<String> = self.query.split_whitespace().map(String::from).collect();
+        let words: Vec<String> = self
+            .query
+            .split_whitespace()
+            .map(str::to_lowercase)
+            .collect();
         let displayed = if words.is_empty() {
             self.cr.clone()
         } else {
@@ -160,15 +165,15 @@ impl Component for App {
                 />
                 { for displayed.0.iter().map(|section| html! {
                     <div class="cr-section">
-                        <h2 class="cr-section-header">{ highlight(section.text, &words) }</h2>
+                        <h2 class="cr-section-header">{ highlight(&section.text, &words) }</h2>
                         { for section.subsections.iter().map(|subsection| html! {
                             <div class="cr-subsection">
-                                <h3 class="cr-subsection-header">{ highlight(subsection.text, &words) }</h3>
+                                <h3 class="cr-subsection-header">{ highlight(&subsection.text, &words) }</h3>
                                 { for subsection.rules.iter().map(|rule| html! {
                                     <div class="cr-rule">
-                                        <p class="cr-rule-text">{ highlight(rule.text, &words) }</p>
+                                        <p class="cr-rule-text">{ highlight(&rule.text, &words) }</p>
                                         { for rule.subrules.iter().map(|subrule| html! {
-                                            <p class="cr-subrule-text">{ highlight(subrule.text, &words) }</p>
+                                            <p class="cr-subrule-text">{ highlight(&subrule.text, &words) }</p>
                                         }) }
                                     </div>
                                 }) }
