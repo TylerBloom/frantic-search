@@ -6,6 +6,12 @@ body {
     padding: 0;
 }
 
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
 .cr-container {
     max-width: 860px;
     margin: 0 auto;
@@ -81,4 +87,10 @@ body {
     margin: 0 0 0.2rem 1.5rem;
     line-height: 1.5;
     color: #444;
+}
+
+.scrollable-results {
+    flex: 1;         // takes up all remaining vertical space
+    overflow-y: auto;
+    min-height: 0;   // important! without this, flex children won't shrink/scroll properly
 }

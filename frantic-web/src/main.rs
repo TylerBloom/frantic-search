@@ -160,27 +160,30 @@ impl Component for App {
                     class="cr-search"
                     type="text"
                     placeholder="Search rules..."
+                    autofocus=true
                     value={ self.query.clone() }
-                    {oninput}
+                    { oninput }
                 />
-                { for displayed.0.iter().map(|section| html! {
-                    <div class="cr-section">
-                        <h2 class="cr-section-header">{ highlight(&section.text, &words) }</h2>
-                        { for section.subsections.iter().map(|subsection| html! {
-                            <div class="cr-subsection">
-                                <h3 class="cr-subsection-header">{ highlight(&subsection.text, &words) }</h3>
-                                { for subsection.rules.iter().map(|rule| html! {
-                                    <div class="cr-rule">
-                                        <p class="cr-rule-text">{ highlight(&rule.text, &words) }</p>
-                                        { for rule.subrules.iter().map(|subrule| html! {
-                                            <p class="cr-subrule-text">{ highlight(&subrule.text, &words) }</p>
-                                        }) }
-                                    </div>
-                                }) }
-                            </div>
-                        }) }
-                    </div>
-                }) }
+                <div class="scrollable-results">
+                    { for displayed.0.iter().map(|section| html! {
+                        <div class="cr-section">
+                            <h2 class="cr-section-header">{ highlight(&section.text, &words) }</h2>
+                            { for section.subsections.iter().map(|subsection| html! {
+                                <div class="cr-subsection">
+                                    <h3 class="cr-subsection-header">{ highlight(&subsection.text, &words) }</h3>
+                                    { for subsection.rules.iter().map(|rule| html! {
+                                        <div class="cr-rule">
+                                            <p class="cr-rule-text">{ highlight(&rule.text, &words) }</p>
+                                            { for rule.subrules.iter().map(|subrule| html! {
+                                                <p class="cr-subrule-text">{ highlight(&subrule.text, &words) }</p>
+                                            }) }
+                                        </div>
+                                    }) }
+                                </div>
+                            }) }
+                        </div>
+                    }) }
+                </div>
             </div>
         }
     }
