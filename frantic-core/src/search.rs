@@ -1,19 +1,18 @@
 use crate::cr::*;
 
-pub struct CrSearch();
-
-impl<'a> Cr<'a> {
-    pub fn search(&self, words: &'_ [String]) -> Cr<'a> {
+impl Cr {
+    pub fn search(&self, words: &'_ [String]) -> Self {
+        let words: Vec<_> = words.iter().map(|s| s.to_lowercase()).collect();
         let mut digest = self.clone();
         digest.0.retain_mut(|section| {
-            section.retain(words);
+            section.retain(&words);
             !section.is_empty()
         });
         digest
     }
 }
 
-impl Section<'_> {
+impl Section {
     fn is_empty(&self) -> bool {
         self.subsections.is_empty()
     }
@@ -26,7 +25,7 @@ impl Section<'_> {
     }
 }
 
-impl SubSection<'_> {
+impl SubSection {
     fn is_empty(&self) -> bool {
         self.rules.is_empty()
     }
@@ -39,26 +38,26 @@ impl SubSection<'_> {
     }
 }
 
-impl Rule<'_> {
+impl Rule {
     fn is_empty(&self) -> bool {
         (self.text.len() < 10) && self.subrules.is_empty()
     }
 
     fn retain(&mut self, words: &'_ [String]) {
-        if !contains_words(self.text, words) {
+        if !contains_words(&self.text.to_lowercase(), words) {
             let text = self.text.split_once(' ').unwrap_or(("", "")).0;
-            self.text = text;
+            self.text = text.to_owned();
         }
-        self.subrules.retain(|sub| contains_words(sub.text, words));
+        self.subrules
+            .retain(|sub| contains_words(&sub.text.to_lowercase(), words));
     }
 }
 
 fn contains_words(input: &str, words: &[String]) -> bool {
     match words {
         [] => true,
-        [first, rest @ ..] => match input.split_once(first) {
-            None => false,
-            Some((front, back)) => contains_words(front, rest) || contains_words(back, rest),
-        },
+        [first, rest @ ..] => input
+            .split_once(first)
+            .is_some_and(|(front, back)| contains_words(front, rest) || contains_words(back, rest)),
     }
 }
