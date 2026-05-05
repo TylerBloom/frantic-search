@@ -8,8 +8,8 @@ use crate::cr::*;
 // Rule -> Subrule | Rule | Section | Subsection
 // Subrule -> Subrule | Rule | Section | Subsection
 
-impl<'a> Cr<'a> {
-    pub fn parse(text: &'a str) -> Cr<'a> {
+impl Cr {
+    pub fn parse(text: &str) -> Cr {
         let mut text = build_rules_iter(text).peekable();
         let mut digest = Vec::new();
         while let Some(line) = text.next() {
@@ -37,8 +37,8 @@ fn build_rules_iter(text: &str) -> impl Iterator<Item = &str> {
         .filter(|line| !line.starts_with("Example:"))
 }
 
-impl<'a> Section<'a> {
-    fn construct<I: Iterator<Item = &'a str>>(line: &'a str, text: &mut Peekable<I>) -> Self {
+impl Section {
+    fn construct<'a, I: Iterator<Item = &'a str>>(line: &'a str, text: &mut Peekable<I>) -> Self {
         let mut subsections = Vec::new();
         while let Some(mut sub) = text.peek().and_then(SubSection::parse) {
             text.next();
@@ -46,22 +46,23 @@ impl<'a> Section<'a> {
             subsections.push(sub);
         }
         Self {
-            text: line,
+            text: line.to_owned(),
             subsections,
         }
     }
 }
 
-impl<'a> SubSection<'a> {
-    fn parse(text: &&'a str) -> Option<Self> {
+impl SubSection {
+    fn parse(text: &&str) -> Option<Self> {
         let (pre, _) = text.split_once('.')?;
         (pre.len() >= 3).then(|| Self {
-            text,
+            text: text.to_string(),
             rules: Vec::new(),
+            number: pre.to_owned(),
         })
     }
 
-    fn populate<I: Iterator<Item = &'a str>>(&mut self, text: &mut Peekable<I>) {
+    fn populate<'a, I: Iterator<Item = &'a str>>(&mut self, text: &mut Peekable<I>) {
         while let Some(mut rule) = text.peek().and_then(Rule::parse) {
             text.next();
             rule.populate(text);
@@ -70,8 +71,8 @@ impl<'a> SubSection<'a> {
     }
 }
 
-impl<'a> Rule<'a> {
-    fn parse(text: &&'a str) -> Option<Self> {
+impl Rule {
+    fn parse(text: &&str) -> Option<Self> {
         let (header, _) = text.split_once(' ')?;
         let mut chunks = header.split('.');
         let chunk_one = chunks
@@ -82,12 +83,13 @@ impl<'a> Rule<'a> {
             .is_some_and(|chunk| chunk.parse::<usize>().is_ok());
         let chunk_three = chunks.next().is_some_and(|chunk| chunk.trim().is_empty());
         (chunk_one && chunk_two && chunk_three).then(|| Self {
-            text,
+            text: text.to_string(),
             subrules: Vec::new(),
+            number: header.to_owned(),
         })
     }
 
-    fn populate<I: Iterator<Item = &'a str>>(&mut self, text: &mut Peekable<I>) {
+    fn populate<'a, I: Iterator<Item = &'a str>>(&mut self, text: &mut Peekable<I>) {
         while let Some(sub) = text.peek().and_then(SubRule::parse) {
             self.subrules.push(sub);
             text.next();
@@ -95,14 +97,17 @@ impl<'a> Rule<'a> {
     }
 }
 
-impl<'a> SubRule<'a> {
-    fn parse(text: &&'a str) -> Option<Self> {
+impl SubRule {
+    fn parse(text: &&str) -> Option<Self> {
         let (header, _) = text.split_once(' ')?;
         header
             .chars()
             .last()
             .is_some_and(char::is_alphabetic)
-            .then_some(Self { text })
+            .then_some(Self {
+                text: text.to_string(),
+                number: header.to_owned(),
+            })
     }
 }
 
@@ -149,7 +154,6 @@ Credits
         assert_eq!(cr.0[1].text, "2. Next Section");
         assert_eq!(cr.0.len(), 2);
         let section = &cr.0[0];
-        panic!();
 
         // Check subsections
         assert_eq!(section.subsections.len(), 4);

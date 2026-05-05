@@ -9,7 +9,7 @@ pub enum Msg {
 }
 
 pub struct App {
-    cr: Cr<'static>,
+    cr: Cr,
     date: String,
     query: String,
 }
