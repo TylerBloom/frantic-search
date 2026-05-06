@@ -1,10 +1,17 @@
 use std::env::args;
 
-use frantic_core::{cr::Cr, normalize_cr_text};
+use frantic_client::FranticClient;
+use frantic_core::cr::Cr;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut args = args();
     args.next();
     let words: Vec<_> = args.collect();
-    // println!("{}", Cr::latest().search(&words));
+
+    let client = FranticClient::connect();
+    let cr = client.fetch_latest().await.unwrap();
+    let cr = Cr::parse(&cr.text);
+
+    println!("{}", cr.search(&words));
 }
