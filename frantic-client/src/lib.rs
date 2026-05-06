@@ -1,10 +1,11 @@
-use anyhow::bail;
-#[cfg(feature = "writable")]
 use chrono::{DateTime, Utc};
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 
 pub struct FranticClient<T> {
     client: Client,
+    // This field is used, but only when `writable` is enabled
+    #[allow(dead_code)]
     marker: T,
 }
 
@@ -15,10 +16,10 @@ pub struct ReadOnly();
 #[cfg(feature = "writable")]
 pub struct Admin(String);
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CrDocument {
     pub text: String,
-    pub date: String,
+    pub date: DateTime<Utc>,
 }
 
 impl FranticClient<ReadOnly> {
@@ -98,61 +99,6 @@ static FIREBASE_URL: &str = "https://firestore.googleapis.com/v1";
 static PARENT: &str = "projects/applied-might-492316-v6/databases/frantic-search-fire/documents";
 
 impl<T> FranticClient<T> {
-    /// Unlike the `fetch_latest` method, this method first fetches the URL to the most recent CR.
-    /// Then, fetches the CR from that URL.
-    pub async fn fetch_latest_indirect(&self) -> anyhow::Result<CrDocument> {
-        let resp = self
-            .client
-            .get(format!("{FIREBASE_URL}/{PARENT}/links/latest_cr"))
-            .header("Content-Type", "application/json")
-            .send()
-            .await?;
-
-        if !resp.status().is_success() {
-            return Err(anyhow::anyhow!(
-                "Failed to fetch document: {}\n{}",
-                resp.status(),
-                resp.text().await?
-            ));
-        }
-
-        let value: serde_json::Value = resp.json().await?;
-        let document = &value["fields"];
-        let text = &document["url"];
-        let url = text["stringValue"].as_str().unwrap();
-
-        let (_, date) = url.split_once(' ').unwrap();
-        let (date, _) = date.split_once('.').unwrap();
-
-        let year = &date[0..4];
-        let month = match &date[4..6] {
-            "01" => "January",
-            "02" => "Febuary",
-            "03" => "March",
-            "04" => "April",
-            "05" => "May",
-            "06" => "June",
-            "07" => "July",
-            "08" => "August",
-            "09" => "September",
-            "10" => "October",
-            "11" => "November",
-            "12" => "December",
-            month => bail!("Invalid date: {date:?}... {month:?}"),
-        }
-        .to_owned();
-        let day = &date[6..8];
-
-        let text = self.client.get(url).send().await?.text().await?;
-
-        println!("{text:?}");
-
-        Ok(CrDocument {
-            text,
-            date: format!("{month} {day}, {year}"),
-        })
-    }
-
     pub async fn fetch_latest(&self) -> anyhow::Result<CrDocument> {
         let resp = self
             .client
@@ -171,43 +117,54 @@ impl<T> FranticClient<T> {
 
         let value: serde_json::Value = resp.json().await?;
         let document = &value["fields"];
+
         let text = &document["text"];
         let text = text["stringValue"].as_str().unwrap().into();
+
         let date = &document["date"];
-        let date = date["timestampValue"].as_str().unwrap().to_string();
-        let (date, _) = date.split_once("T").unwrap();
-        let year = &date[0..4];
-        let month = match &date[5..7] {
-            "01" => "January",
-            "02" => "Febuary",
-            "03" => "March",
-            "04" => "April",
-            "05" => "May",
-            "06" => "June",
-            "07" => "July",
-            "08" => "August",
-            "09" => "September",
-            "10" => "October",
-            "11" => "November",
-            "12" => "December",
-            month => {
-                return Err(anyhow::anyhow!(format!(
-                    "Invalid date: {date:?}... {month:?}"
-                )));
-            }
+        let date = date["timestampValue"]
+            .as_str()
+            .unwrap()
+            .to_string()
+            .parse()
+            .map_err(|err| anyhow::anyhow!("{err}"))?;
+
+        Ok(CrDocument { text, date })
+    }
+
+    /// Fetches the date of the latest CR.
+    pub async fn fetch_latest_date(&self) -> anyhow::Result<DateTime<Utc>> {
+        let resp = self
+            .client
+            .get(format!("{FIREBASE_URL}/{PARENT}/cr_dates/latest"))
+            .header("Content-Type", "application/json")
+            .send()
+            .await?;
+
+        if !resp.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "Failed to fetch document: {}\n{}",
+                resp.status(),
+                resp.text().await?
+            ));
         }
-        .to_owned();
-        let day = &date[8..10];
-        Ok(CrDocument {
-            text,
-            date: format!("{month} {day}, {year}"),
-        })
+
+        let value: serde_json::Value = resp.json().await?;
+        let document = &value["fields"];
+
+        let date = &document["cr_date"];
+        date["timestampValue"]
+            .as_str()
+            .unwrap()
+            .to_string()
+            .parse()
+            .map_err(|err| anyhow::anyhow!("{err}"))
     }
 }
 
 #[cfg(feature = "writable")]
 impl FranticClient<Admin> {
-    pub async fn write(&self, text: String, date: DateTime<Utc>) -> anyhow::Result<()> {
+    pub async fn write_rules(&self, text: String, date: DateTime<Utc>) -> anyhow::Result<()> {
         let write_resp = self
             .client
             .post(format!("{FIREBASE_URL}/{PARENT}/rules"))
@@ -284,6 +241,26 @@ impl FranticClient<Admin> {
                 write_resp.status(),
                 write_resp.text().await?
             ));
+        }
+
+        let write_resp = self
+            .client
+            .patch(format!("{FIREBASE_URL}/{PARENT}/cr_dates/latest"))
+            .header("Authorization", format!("Bearer {}", self.marker.0))
+            .json(&serde_json::json!({
+                "fields": {
+                    "cr_date": { "timestampValue": date },
+                }
+            }))
+            .send()
+            .await?;
+
+        if !write_resp.status().is_success() {
+            anyhow::bail!(
+                "Failed to write document: {}\n{}",
+                write_resp.status(),
+                write_resp.text().await?
+            );
         }
 
         Ok(())
