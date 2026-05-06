@@ -8,5 +8,9 @@ members = [
 ]
 resolver = "2"
 
+# Reduces the binary size of the WASM file.
 [profile.release]
 lto = true
+opt-level="z"
+codegen-units = 1
+panic = "abort"
