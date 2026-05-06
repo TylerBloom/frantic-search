@@ -435,6 +435,7 @@ version = "0.1.0"
 dependencies = [
  "frantic-client",
  "frantic-core",
+ "tokio",
 ]
 
 [[package]]
@@ -473,10 +474,13 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-std",
+ "chrono",
  "frantic-client",
  "frantic-core",
  "gloo 0.12.0",
  "js-sys",
+ "serde",
+ "serde_json",
  "wasm-bindgen-futures",
  "web-sys",
  "yew",
@@ -2305,9 +2309,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.51.1"
+version = "1.52.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f66bf9585cda4b724d3e78ab34b73fb2bbaba9011b9bfdf69dc836382ea13b8c"
+checksum = "110a78583f19d5cdb2c5ccf321d1290344e71313c6c37d43520d386027d18386"
 dependencies = [
  "bytes",
  "libc",
