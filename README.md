@@ -1,5 +1,3 @@
-![GitHub Workflows](https://github.com/TylerBloom/frantic-search/actions/workflows/ci.yml/badge.svg)
-![Deployment](https://frantic-search.net)
 ![Maintenance](https://img.shields.io/badge/Maintenance-Actively%20Developed-brightgreen.svg)
 
 ## About
