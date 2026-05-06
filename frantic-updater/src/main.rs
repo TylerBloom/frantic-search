@@ -30,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
                 .write_latest_rules(text.clone(), date)
                 .await
                 .unwrap();
-            fs_client.write(text, date).await.unwrap();
+            fs_client.write_rules(text, date).await.unwrap();
         }
 
         date = date + Days::new(1);
